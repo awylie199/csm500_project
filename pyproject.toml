@@ -1,0 +1,50 @@
+[project]
+name = "csm500-project"
+version = "0.0.1"
+description = "UOL CSM 500 Project"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "ipykernel>=7.3.0",
+    "jupyterlab>=4.6.2",
+    "matplotlib>=3.11.1",
+    "numpy>=2.5.1",
+    "pandas>=3.0.5",
+    "scikit-learn>=1.9.0",
+    "scipy>=1.18.0",
+]
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.9",
+    "pandas-stubs>=3.0.5.260730",
+    "ruff>=0.16.1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = []
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "F", # pyflakes
+    "I", # import sorting
+    "UP", # pyupgrade
+    "B", # bugbear
+    "SIM", # simplify
+    "RUF", # Ruff rules
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.basedpyright]
+typeCheckingMode = "recommended"
+reportMissingTypeStubs = false
+
+executionEnvironments = [
+    { root = "src" }
+]
