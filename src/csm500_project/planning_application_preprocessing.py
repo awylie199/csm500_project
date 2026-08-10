@@ -1,15 +1,15 @@
 """Preprocess the Raw Planning Application File for Feature Development"""
 
 from pathlib import Path
-from typing import Any, Final
+from typing import Final
 
-from pandas import DataFrame, read_csv
+import pandas as pd
 
 ADDRESS_COLUMN: Final[str] = "address-text"
 COLUMN_DTYPES: Final[dict[str, str]] = {
     "entity": "string",
     "organisation-entity": "category",
-    "point": "string",  # Treat as a string for further preprocessing
+    "point": "string",  # Treat initially as a string for later parsing as a Point type
     ADDRESS_COLUMN: "string",
     "description": "string",
     "development-classification": "category",
@@ -34,46 +34,35 @@ EXTRANEOUS_COLUMNS: Final[list[str]] = [
     "planning-application-type",
     "uprn",
 ]
-PLANNING_DATA_FILE = Path(__file__).parent / "data" / "planning-application_20250917.csv"
+PLANNING_DATA_FILE: Final[Path] = (
+    Path(__file__).parent / "data" / "planning-application_20250917.csv"
+)
 POSTCODE_PATTERN: Final[str] = r"\b([A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2})\b"
 
 
-def _disaggregate_date_field(data: DataFrame, field: str) -> None:
+def _disaggregate_date_field(data: pd.DataFrame, field: str) -> None:
     """Disaggregate date field into year and quarter category fields."""
     data["year-of-transfer"] = data[field].dt.year.astype("category")
     data["quarter-of-transfer"] = data[field].dt.quarter.astype("category")
 
 
-def _remove_extraneous_data(data: DataFrame) -> DataFrame:
+def _remove_extraneous_data(data: pd.DataFrame) -> pd.DataFrame:
     """Remove extraneous columns and rows from data frame."""
 
-    def _is_valid_text_field(value: object) -> bool:
+    def _is_not_empty(value: object) -> bool:
         return isinstance(value, str) and bool(value.strip())
 
+    # Remove redundant columns, observations without addresses, descriptions and points
     data.drop(columns=EXTRANEOUS_COLUMNS, inplace=True)
-    df = data[data[ADDRESS_COLUMN].apply(_is_valid_text_field)]
+    df = data[data[ADDRESS_COLUMN].apply(_is_not_empty)]
+    df = df[df["point"].apply(_is_not_empty)]
 
-    return df[df["description"].apply(_is_valid_text_field)]
-
-
-def _disaggregate_address_field(data: DataFrame) -> None:
-    """Disaggregate address field into component fields"""
-    # Extract the postcode from the address if present and remove from address
-    data["postcode"] = data[ADDRESS_COLUMN].str.extract(POSTCODE_PATTERN, expand=False)
-    data[ADDRESS_COLUMN] = (
-        data[ADDRESS_COLUMN]
-        .str.replace(POSTCODE_PATTERN, "", regex=True)
-        .str.replace(r"\s*,\s*$", "", regex=True)
-        .str.strip()
-    )
-    # Extract the Outward Code from Postcode
-    data["outward-code"] = data["postcode"].str.split(n=1).str[0]
-    data["outward-code"] = data["outward-code"].astype("category")
+    return df[df["description"].apply(_is_not_empty)]
 
 
-def preprocess_planning_data() -> DataFrame:
+def preprocess_planning_data() -> pd.DataFrame:
     """Preprocess the Raw Planning Application File for Feature Development"""
-    preprocessed_data_df = read_csv(
+    preprocessed_data_df = pd.read_csv(
         PLANNING_DATA_FILE,
         dtype=COLUMN_DTYPES,
         date_format="%Y-%m-%d",
@@ -90,8 +79,5 @@ def preprocess_planning_data() -> DataFrame:
 
     preprocessed_data_df[ADDRESS_COLUMN] = preprocessed_data_df[ADDRESS_COLUMN].str.upper()
     preprocessed_data_df["description"] = preprocessed_data_df["description"].str.upper()
-
-    _disaggregate_address_field(preprocessed_data_df)
-    print(f"Observations with postcode: {preprocessed_data_df['postcode'].notna().sum()}")
 
     return preprocessed_data_df
