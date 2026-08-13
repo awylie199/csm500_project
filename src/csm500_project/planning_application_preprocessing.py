@@ -17,27 +17,10 @@ COLUMN_DTYPES: Final[dict[str, str]] = {
     "planning-decision": "category",  # Target
     "planning-decision-type": "category",
 }
-DATE_COLUMNS: Final[list[str]] = ["entry-date", "start-date", "decision-date"]
-EXTRANEOUS_COLUMNS: Final[list[str]] = [
-    "dataset",
-    "end-date",
-    "geojson",
-    "geometry",
-    "name",
-    "prefix",
-    "reference",
-    "typology",
-    "documentation-url",
-    "ground-area",
-    "notes",
-    "organisation",
-    "planning-application-type",
-    "uprn",
-]
+DATE_COLUMNS: Final[list[str]] = ["entry-date", "decision-date"]
 PLANNING_DATA_FILE: Final[Path] = (
     Path(__file__).parent / "data" / "planning-application_20250917.csv"
 )
-POSTCODE_PATTERN: Final[str] = r"\b([A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2})\b"
 
 
 def _disaggregate_date_field(data: pd.DataFrame, field: str) -> None:
@@ -53,7 +36,7 @@ def _remove_extraneous_data(data: pd.DataFrame) -> pd.DataFrame:
         return isinstance(value, str) and bool(value.strip())
 
     # Remove redundant columns, observations without addresses, descriptions and points
-    data.drop(columns=EXTRANEOUS_COLUMNS, inplace=True)
+    data.dropna(inplace=True)
     df = data[data[ADDRESS_COLUMN].apply(_is_not_empty)]
     df = df[df["point"].apply(_is_not_empty)]
 
@@ -65,17 +48,29 @@ def preprocess_planning_data() -> pd.DataFrame:
     preprocessed_data_df = pd.read_csv(
         PLANNING_DATA_FILE,
         dtype=COLUMN_DTYPES,
+        usecols=[
+            "entity",
+            "organisation-entity",
+            "point",
+            ADDRESS_COLUMN,
+            "description",
+            "development-classification",
+            "planning-application-status",
+            "planning-decision",
+            "planning-decision-type",
+        ],
         date_format="%Y-%m-%d",
         parse_dates=DATE_COLUMNS,
         keep_default_na=False,
     )
 
-    for date_column in DATE_COLUMNS:
-        _disaggregate_date_field(preprocessed_data_df, date_column)
-
     print(f"Raw shape: {preprocessed_data_df.shape}")
+    print(f"Raw Null Values\n: {preprocessed_data_df.isna().sum()}")
     preprocessed_data_df = _remove_extraneous_data(preprocessed_data_df)
     print(f"Shape without extraneous data: {preprocessed_data_df.shape}")
+
+    for date_column in DATE_COLUMNS:
+        _disaggregate_date_field(preprocessed_data_df, date_column)
 
     preprocessed_data_df[ADDRESS_COLUMN] = preprocessed_data_df[ADDRESS_COLUMN].str.upper()
     preprocessed_data_df["description"] = preprocessed_data_df["description"].str.upper()
