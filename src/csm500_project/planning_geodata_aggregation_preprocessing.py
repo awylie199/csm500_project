@@ -8,6 +8,8 @@ import pandas as pd
 from pandas import DataFrame
 from pyproj.crs import CRS
 
+from .util import is_not_empty
+
 LSOA_GPKG_FILE: Final[Path] = (
     Path(__file__).parent
     / "data"
@@ -27,15 +29,39 @@ LSOA_IMD_CLASSIFICATION_FILE: Final[Path] = (
 CONSERVATION_AREA_FILE: Final[Path] = Path(__file__).parent / "data" / "conservation_area.csv"
 
 
-def _draw_gdf_lsoa_plot(
+def _get_plot_lims(gdf: gpd.GeoDataFrame) -> tuple[tuple[float, float], tuple[float, float]]:
+    minx, miny, maxx, maxy = gdf.total_bounds
+    xrange: float = maxx - minx
+    yrange: float = maxy - miny
+    padding: float = 0.05  # 5%
+
+    return (
+        (minx - xrange * padding, maxx + xrange * padding),
+        (miny - yrange * padding, maxy + yrange * padding),
+    )
+
+
+def _draw_gdf_applications_plot(
     applications_df: gpd.GeoDataFrame,
     lsoa_df: gpd.GeoDataFrame | None,
-    councils_df: gpd.GeoDataFrame,
+    councils_gdf: gpd.GeoDataFrame,
+    conservation_areas_gdf: gpd.GeoDataFrame | None,
     title: str = "",
+    x_lim: tuple[float, float] | None = None,
+    y_lim: tuple[float, float] | None = None,
 ) -> None:
-    """Plot the Application (GDF) Points over the LSOA Polygons"""
+    """Plot the Application (GDF) Points over the LSOA Polygons or Conservation Area Polygons"""
 
     _, ax = plt.subplots(figsize=(12, 12))
+
+    if conservation_areas_gdf is not None and not conservation_areas_gdf.empty:
+        _ = conservation_areas_gdf.plot(
+            ax=ax,
+            markersize=5,
+            facecolor="yellow",
+            edgecolor="none",
+            alpha=0.7,
+        )
 
     if lsoa_df is not None:
         _ = lsoa_df.plot(
@@ -49,9 +75,9 @@ def _draw_gdf_lsoa_plot(
             linewidth=0.5,
         )
 
-    _ = councils_df.plot(
+    _ = councils_gdf.plot(
         ax=ax,
-        markersize=10,
+        markersize=5,
         facecolor="none",
         edgecolor="black",
         alpha=0.7,
@@ -71,15 +97,9 @@ def _draw_gdf_lsoa_plot(
         zoom=12,  # pyright: ignore[reportArgumentType]
     )
 
-    if lsoa_df is not None:
-        minx, miny, maxx, maxy = lsoa_df.total_bounds
-
-        xrange: float = maxx - minx
-        yrange: float = maxy - miny
-        padding: float = 0.05  # 5%
-
-        _ = ax.set_xlim(minx - xrange * padding, maxx + xrange * padding)
-        _ = ax.set_ylim(miny - yrange * padding, maxy + yrange * padding)
+    if x_lim and y_lim:
+        _ = ax.set_xlim(x_lim[0], x_lim[1])
+        _ = ax.set_ylim(y_lim[0], y_lim[1])
 
     ax.set_axis_off()
 
@@ -135,11 +155,6 @@ def _get_lsoa_imd_df() -> pd.DataFrame:
         keep_default_na=False,
     )
 
-    lsoa_imd_df.drop(
-        columns=["Local Authority District code (2024)", "Local Authority District name (2024)"],
-        inplace=True,
-    )
-
     return lsoa_imd_df
 
 
@@ -168,13 +183,22 @@ def _get_conservation_areas_gdf(applications_gdf_crs: CRS) -> gpd.GeoDataFrame:
             "entity": "string",
             "geometry": "string",
             "name": "string",
-            "quality": "categorical",
+            "quality": "category",
         },
         keep_default_na=False,
     )
-    conservation_areas_gdf: gpd.GeoDataFrame = gpd.GeoDataFrame(
-        conservation_areas_df.copy(),
-        geometry=gpd.GeoSeries.from_wkt(conservation_areas_df["geometry"]),
+
+    missing_geometry = conservation_areas_df["geometry"].isna() | conservation_areas_df[
+        "geometry"
+    ].eq("")
+    print(f"N/A Conservation Ares: {missing_geometry.sum()}")
+
+    conservation_areas_df = conservation_areas_df[
+        conservation_areas_df["geometry"].apply(is_not_empty)
+    ]
+    conservation_areas_gdf = gpd.GeoDataFrame(
+        conservation_areas_df,
+        geometry=gpd.GeoSeries.from_wkt(conservation_areas_df["geometry"], on_invalid="warn"),
         crs="EPSG:4326",
     )
     conservation_areas_gdf_crs: CRS | None = conservation_areas_gdf.crs
@@ -240,21 +264,44 @@ def _plot_lsoa(
     applications_gdf: gpd.GeoDataFrame,
     lsoa_gdf: gpd.GeoDataFrame,
     councils_gdf: gpd.GeoDataFrame,
+    conservation_areas_gdf: gpd.GeoDataFrame,
 ) -> None:
-    """Plot Individual LSOA and Contextual Data (Applications, Council, Conservation Area)"""
+    """Plot Individual LSOA and Contextual Data (Applications, Councils, Conservation Areas)"""
     council_subset_gdf: gpd.GeoDataFrame = councils_gdf[councils_gdf["CTYUA25NM"] == council]
     applications_subset_gdf: gpd.GeoDataFrame = applications_gdf[
         applications_gdf["CTYUA25NM"] == council
     ]
 
     lsoa_codes = applications_subset_gdf["LSOA21CD"].dropna().unique()
-    lsoa_subset: gpd.GeoDataFrame = lsoa_gdf[lsoa_gdf["LSOA21CD"].isin(lsoa_codes)]
+    lsoa_subset_gdf: gpd.GeoDataFrame = lsoa_gdf[lsoa_gdf["LSOA21CD"].isin(lsoa_codes)]
 
-    _draw_gdf_lsoa_plot(
+    conservation_areas_subset_gdf = gpd.sjoin(
+        conservation_areas_gdf,
+        lsoa_subset_gdf,
+        how="inner",
+        predicate="intersects",
+        rsuffix="_conservation_area",
+    )
+
+    x_lim, y_lim = _get_plot_lims(lsoa_subset_gdf)
+
+    _draw_gdf_applications_plot(
         applications_subset_gdf,
-        lsoa_subset,
+        lsoa_subset_gdf,
         council_subset_gdf,
-        title=f"{council} ({council_subset_gdf['CTYUA25CD'].iloc[0]})",
+        None,
+        title=f"{council} ({council_subset_gdf['CTYUA25CD'].iloc[0]}) LSOAs and Applications",
+        x_lim=x_lim,
+        y_lim=y_lim,
+    )
+    _draw_gdf_applications_plot(
+        applications_subset_gdf,
+        None,
+        council_subset_gdf,
+        conservation_areas_subset_gdf,
+        title=f"{council} ({council_subset_gdf['CTYUA25CD'].iloc[0]}) Conservation Areas and Applications",
+        x_lim=x_lim,
+        y_lim=y_lim,
     )
 
 
@@ -268,20 +315,31 @@ def preprocess_aggregate_geodata(df: DataFrame) -> gpd.GeoDataFrame:
     conservation_areas_gdf = _get_conservation_areas_gdf(applications_crs)
 
     applications_gdf = _merge_councils_and_lsoa(applications_gdf, councils_gdf, lsoa_gdf)
-    _draw_gdf_lsoa_plot(applications_gdf, None, councils_gdf, title="All Applications")
+    _draw_gdf_applications_plot(
+        applications_gdf,
+        None,
+        councils_gdf,
+        conservation_areas_gdf,
+        title="All Applications and Conservation Areas",
+    )
 
     applications_gdf, lsoa_gdf = _merge_lsoa_imd(applications_gdf, lsoa_gdf, lsoa_imd_df)
-    _draw_gdf_lsoa_plot(
+    _draw_gdf_applications_plot(
         applications_gdf,
         lsoa_gdf,
         councils_gdf,
+        conservation_areas_gdf,
         title="Applications within Valid LSOAs",
     )
 
     print(applications_gdf.groupby("CTYUA25NM").size())
 
     for council in applications_gdf["CTYUA25NM"].unique():
-        _plot_lsoa(str(council), applications_gdf, lsoa_gdf, councils_gdf)
+        _plot_lsoa(str(council), applications_gdf, lsoa_gdf, councils_gdf, conservation_areas_gdf)
+
+    # Render plots with LSOA or Conservation Area
+    # Percentage of Applications within Conservation Areas
+    # Percentage of Applications within each IMD decile
 
     # Group rare councils into 'Other' Category
 

@@ -5,6 +5,8 @@ from typing import Final
 
 import pandas as pd
 
+from .util import is_not_empty
+
 ADDRESS_COLUMN: Final[str] = "address-text"
 COLUMN_DTYPES: Final[dict[str, str]] = {
     "entity": "string",
@@ -32,15 +34,12 @@ def _disaggregate_date_field(data: pd.DataFrame, field: str) -> None:
 def _remove_extraneous_data(data: pd.DataFrame) -> pd.DataFrame:
     """Remove extraneous columns and rows from data frame."""
 
-    def _is_not_empty(value: object) -> bool:
-        return isinstance(value, str) and bool(value.strip())
-
     # Remove redundant columns, observations without addresses, descriptions and points
     data.dropna(inplace=True)
-    df = data[data[ADDRESS_COLUMN].apply(_is_not_empty)]
-    df = df[df["point"].apply(_is_not_empty)]
+    df = data[data[ADDRESS_COLUMN].apply(is_not_empty)]
+    df = df[df["point"].apply(is_not_empty)]
 
-    return df[df["description"].apply(_is_not_empty)]
+    return df[df["description"].apply(is_not_empty)]
 
 
 def preprocess_planning_data() -> pd.DataFrame:
@@ -58,6 +57,7 @@ def preprocess_planning_data() -> pd.DataFrame:
             "planning-application-status",
             "planning-decision",
             "planning-decision-type",
+            *DATE_COLUMNS,
         ],
         date_format="%Y-%m-%d",
         parse_dates=DATE_COLUMNS,
