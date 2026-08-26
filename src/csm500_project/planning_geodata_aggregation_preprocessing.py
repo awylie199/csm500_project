@@ -5,7 +5,6 @@ import contextily as cx
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
-from pandas import DataFrame
 from pyproj.crs import CRS
 
 from .util import is_not_empty
@@ -289,7 +288,7 @@ def _plot_lsoa(
     )
 
 
-def preprocess_aggregate_geodata(df: DataFrame) -> gpd.GeoDataFrame:
+def preprocess_aggregate_geodata(df: pd.DataFrame) -> gpd.GeoDataFrame:
     """Aggregate geodata data sources using LSOA boundary polygons"""
 
     applications_gdf, applications_crs = _get_applications_gdf(df)
@@ -332,18 +331,16 @@ def preprocess_aggregate_geodata(df: DataFrame) -> gpd.GeoDataFrame:
     )
 
     # Applications may fall within overlapping conservation areas
-    applications_gdf["is_within_conservation_area"] = (
+    applications_gdf["Conservation Area"] = (
         applications_gdf_with_conservation_areas.groupby(level=0)["index_conservation_area"].apply(lambda x: x.notna().any()).astype(int)
     )
 
-    print(f"Applications within Conservation Areas\n {applications_gdf['is_within_conservation_area'].value_counts()}")
+    print(f"Applications within Conservation Areas\n {applications_gdf['Conservation Area'].value_counts()}")
 
     # Percentage of Applications within each IMD decile
     print(
         f"Applications within IMD Deciles\n {applications_gdf['Index of Multiple Deprivation (IMD) Decile (where 1 is most deprived 10% of LSOA'].value_counts(sort=True)}"
     )
-
-    # Group rare councils into 'Other' Category
 
     # N.B. 4 year gap between LSOA and Council boundaries which may explain some discrepancies on map alignment
     applications_gdf.rename(
