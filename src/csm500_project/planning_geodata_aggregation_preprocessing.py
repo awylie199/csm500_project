@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pyproj.crs import CRS
 
+from .constant import NO_PLOTS
 from .util import is_not_empty
 
 LSOA_GPKG_FILE: Final[Path] = (
@@ -44,6 +45,9 @@ def _draw_gdf_applications_plot(
     y_lim: tuple[float, float] | None = None,
 ) -> None:
     """Plot the Application (GDF) Points over the LSOA Polygons or Conservation Area Polygons"""
+
+    if NO_PLOTS:
+        return
 
     _, ax = plt.subplots(figsize=(12, 12))
 
@@ -154,9 +158,9 @@ def _get_lsoa_imd_df() -> pd.DataFrame:
 def _get_councils_gdf(applications_gdf_crs: CRS) -> gpd.GeoDataFrame:
     """Get Councils GDF"""
     councils_gdf: gpd.GeoDataFrame = gpd.read_file(COUNCIL_GPKG_FILE)
-    councils_gdf_crf: CRS | None = councils_gdf.crs
+    councils_gdf_crs: CRS | None = councils_gdf.crs
 
-    if not councils_gdf_crf:
+    if not councils_gdf_crs:
         raise ValueError("Unknown Councils CRS")
 
     return councils_gdf.to_crs(applications_gdf_crs)
@@ -320,8 +324,6 @@ def preprocess_aggregate_geodata(df: pd.DataFrame) -> gpd.GeoDataFrame:
     for council in applications_gdf["CTYUA25NM"].unique():
         _plot_lsoa(str(council), applications_gdf, lsoa_gdf, councils_gdf, conservation_areas_gdf)
 
-    # Percentage of Applications within Conservation Areas
-
     applications_gdf_with_conservation_areas = gpd.sjoin(
         applications_gdf[["geometry"]],
         conservation_areas_gdf[["geometry"]],
@@ -352,8 +354,5 @@ def preprocess_aggregate_geodata(df: pd.DataFrame) -> gpd.GeoDataFrame:
         },
         inplace=True,
     )
-
-    # Drop columns used for joining dataframes, extrapolating geometry data and superfluous names
-    applications_gdf.drop(columns={"index__council", "index_right", "geometry", "Point", "LSOA21NM", "CTYUA25NM"}, inplace=True)
 
     return applications_gdf

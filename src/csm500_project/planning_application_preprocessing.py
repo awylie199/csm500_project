@@ -38,8 +38,6 @@ def _disaggregate_date_field(data: pd.DataFrame, field: str) -> None:
     data[f"{field}-{YEAR_OF_TRANSFER}"] = data[field].dt.year.astype("category")
     data[f"{field}-{QUARTER_OF_TRANSFER}"] = data[field].dt.quarter.astype("category")
 
-    data.drop(columns={field}, inplace=True)
-
 
 def _remove_extraneous_data(data: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     """Remove extraneous columns and rows from data frame."""
@@ -66,6 +64,8 @@ def preprocess_planning_data() -> pd.DataFrame:
 
     for date_column in DATE_COLUMNS:
         _disaggregate_date_field(preprocessed_data_df, date_column)
+
+    preprocessed_data_df.drop(columns=["entry-date"], inplace=True)
 
     preprocessed_data_df["description"] = preprocessed_data_df["description"].str.upper()
 
