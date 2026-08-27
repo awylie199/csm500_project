@@ -7,7 +7,7 @@ import geopandas as gpd
 import numpy as np
 from pyproj import CRS
 
-HERITAGE_LIST_FILE: Final[Path] = (
+_HERITAGE_LIST_FILE: Final[Path] = (
     Path(__file__).parent.parent / "data" / "heritage" / "National_Heritage_List_for_England_NHLE_v02_VIEW_4825054924992358738.gpkg"
 )
 
@@ -38,7 +38,7 @@ def preprocess_heritage_data(applications_gdf: gpd.GeoDataFrame) -> gpd.GeoDataF
 
     applications_gdf_epsg27700: gpd.GeoDataFrame = applications_gdf.to_crs(EPSG_27700_CRS)
     heritage_list_gdf: gpd.GeoDataFrame = gpd.read_file(
-        HERITAGE_LIST_FILE,
+        _HERITAGE_LIST_FILE,
         date_format="%Y-%m-%d, %H:%M",
         parse_dates=["ListDate"],
         dtype={"Grade": "category", "Easting": int, "Northing": int},
