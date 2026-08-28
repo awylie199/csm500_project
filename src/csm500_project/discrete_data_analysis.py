@@ -17,7 +17,7 @@ NON_ORDINAL_CATEGORIES: Final[tuple[str, ...]] = (
     "Organisation Entity",
     "Development Classification",
     "IMD Decile",
-    "Conservation Area",
+    "In Conservation Area",
 )
 
 

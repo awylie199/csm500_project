@@ -8,7 +8,7 @@ import pandas as pd
 from pyproj.crs import CRS
 
 from .constant import NO_PLOTS
-from .util import is_not_empty
+from .util import get_plot_lims, is_not_empty
 
 LSOA_GPKG_FILE: Final[Path] = (
     Path(__file__).parent / "data" / "Lower_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V5_-6970154227154374572.gpkg"
@@ -23,20 +23,8 @@ LSOA_IMD_CLASSIFICATION_FILE: Final[Path] = Path(__file__).parent / "data" / "ls
 CONSERVATION_AREA_FILE: Final[Path] = Path(__file__).parent / "data" / "conservation_area.csv"
 
 
-def _get_plot_lims(gdf: gpd.GeoDataFrame) -> tuple[tuple[float, float], tuple[float, float]]:
-    minx, miny, maxx, maxy = gdf.total_bounds
-    xrange: float = maxx - minx
-    yrange: float = maxy - miny
-    padding: float = 0.05  # 5%
-
-    return (
-        (minx - xrange * padding, maxx + xrange * padding),
-        (miny - yrange * padding, maxy + yrange * padding),
-    )
-
-
 def _draw_gdf_applications_plot(
-    applications_df: gpd.GeoDataFrame,
+    applications_gdf: gpd.GeoDataFrame,
     lsoa_df: gpd.GeoDataFrame | None,
     councils_gdf: gpd.GeoDataFrame,
     conservation_areas_gdf: gpd.GeoDataFrame | None,
@@ -80,7 +68,7 @@ def _draw_gdf_applications_plot(
         alpha=0.7,
     )
 
-    _ = applications_df.plot(
+    _ = applications_gdf.plot(
         ax=ax,
         markersize=10,
         facecolor="red",
@@ -270,7 +258,7 @@ def _plot_lsoa(
         rsuffix="_conservation_area",
     )
 
-    x_lim, y_lim = _get_plot_lims(lsoa_subset_gdf)
+    x_lim, y_lim = get_plot_lims(lsoa_subset_gdf)
 
     _draw_gdf_applications_plot(
         applications_subset_gdf,
@@ -333,11 +321,11 @@ def preprocess_aggregate_geodata(df: pd.DataFrame) -> gpd.GeoDataFrame:
     )
 
     # Applications may fall within overlapping conservation areas
-    applications_gdf["Conservation Area"] = (
+    applications_gdf["In Conservation Area"] = (
         applications_gdf_with_conservation_areas.groupby(level=0)["index_conservation_area"].apply(lambda x: x.notna().any()).astype(int)
     )
 
-    print(f"Applications within Conservation Areas\n {applications_gdf['Conservation Area'].value_counts()}")
+    print(f"Applications within Conservation Areas\n {applications_gdf['In Conservation Area'].value_counts()}")
 
     # Percentage of Applications within each IMD decile
     print(
