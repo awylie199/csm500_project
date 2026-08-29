@@ -169,7 +169,7 @@ def preprocess_environmental_data(applications_gdf: gpd.GeoDataFrame) -> gpd.Geo
 
     applications_gdf = gpd.sjoin(
         applications_gdf,
-        flood_risk_gdf[["flood-risk-level", "flood-risk-type", "geometry"]],
+        flood_risk_gdf[["geometry"]],
         how="left",
         predicate="within",
         rsuffix="flood_risk",
@@ -194,11 +194,13 @@ def preprocess_environmental_data(applications_gdf: gpd.GeoDataFrame) -> gpd.Geo
     for layer, gdf in geohazards_gdfs.items():
         applications_gdf = gpd.sjoin(
             applications_gdf,
-            gdf[["geometry"]],
+            gdf[["CLASS", "geometry"]],
             how="left",
             predicate="within",
             rsuffix=layer,
         )
+
+        applications_gdf.rename(columns={"CLASS": f"{layer} Susceptibility"}, inplace=True)
 
     applications_gdf["In Flood Zone"] = applications_gdf.groupby(level=0)["index_flood_risk"].apply(_is_within_area)
     print(f"Applications within Flood Zone\n {applications_gdf['In Flood Zone'].value_counts()}")
@@ -215,6 +217,9 @@ def preprocess_environmental_data(applications_gdf: gpd.GeoDataFrame) -> gpd.Geo
     )
 
     for layer, geohazard_gdf in geohazards_gdfs.items():
-        _plot_environmental_maps(applications_gdf, None, geohazard_gdf, f"Applications Within {layer}", *get_plot_lims(geohazard_gdf))
+        _plot_environmental_maps(applications_gdf, None, geohazard_gdf, f"Applications Within {layer}", *get_plot_lims(applications_gdf))
+
+    print(applications_gdf.columns)
+    print(applications_gdf.shape)
 
     return applications_gdf

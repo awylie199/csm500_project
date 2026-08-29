@@ -61,7 +61,7 @@ def preprocess_heritage_data(applications_gdf: gpd.GeoDataFrame) -> gpd.GeoDataF
         heritage_list_gdf_epsg27700[["Grade", "ListDate", "geometry"]],
         how="left",
         distance_col="distance_m",
-        max_distance=10,
+        max_distance=1,
         rsuffix="_heritage_list",
     )
 
