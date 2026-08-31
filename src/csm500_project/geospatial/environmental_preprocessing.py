@@ -12,12 +12,12 @@ from pyproj import CRS
 from csm500_project.constant import NO_PLOTS
 from csm500_project.util import get_plot_lims, is_not_empty
 
-_DATA_PATH = Path(__file__).parent.parent
-_WOODLANDS_FILE: Final[Path] = _DATA_PATH / "data" / "environmental" / "Ancient_Woodland_England_-5278492453441969325.gpkg"
-_FLOOD_RISK_FILE_PART_1: Final[Path] = _DATA_PATH / "data" / "environmental" / "flood-risk-zone.part01.csv"
-_FLOOD_RISK_FILE_PART_2: Final[Path] = _DATA_PATH / "data" / "environmental" / "flood-risk-zone.part02.csv"
-_GREEN_BELT_FILE: Final[Path] = _DATA_PATH / "data" / "environmental" / "green-belt.csv"
-_GEOHAZARDS_FILE: Final[Path] = _DATA_PATH / "data" / "environmental" / "GB_Hex_5km_GeoSure_All_V8.gpkg"
+_DATA_PATH = Path(__file__).parent.parent / "data"
+_WOODLANDS_FILE: Final[Path] = _DATA_PATH / "environmental" / "Ancient_Woodland_England_-5278492453441969325.gpkg"
+_FLOOD_RISK_FILE_PART_1: Final[Path] = _DATA_PATH / "environmental" / "flood-risk-zone.part01.csv"
+_FLOOD_RISK_FILE_PART_2: Final[Path] = _DATA_PATH / "environmental" / "flood-risk-zone.part02.csv"
+_GREEN_BELT_FILE: Final[Path] = _DATA_PATH / "environmental" / "green-belt.csv"
+_GEOHAZARDS_FILE: Final[Path] = _DATA_PATH / "environmental" / "GB_Hex_5km_GeoSure_All_V8.gpkg"
 
 
 def _get_flood_risk_gdf(applications_gdf_crs: CRS) -> gpd.GeoDataFrame:
@@ -218,8 +218,5 @@ def preprocess_environmental_data(applications_gdf: gpd.GeoDataFrame) -> gpd.Geo
 
     for layer, geohazard_gdf in geohazards_gdfs.items():
         _plot_environmental_maps(applications_gdf, None, geohazard_gdf, f"Applications Within {layer}", *get_plot_lims(applications_gdf))
-
-    print(applications_gdf.columns)
-    print(applications_gdf.shape)
 
     return applications_gdf

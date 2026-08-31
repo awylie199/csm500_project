@@ -12,6 +12,7 @@ dependencies = [
     "matplotlib>=3.11.1",
     "numpy>=2.5.2",
     "pandas>=3.0.5",
+    "pyarrow>=25.0.1",
     "pyproj>=3.7.2",
     "scikit-learn>=1.9.0",
     "scipy>=1.18.0",
@@ -23,6 +24,7 @@ dev = [
     "basedpyright>=1.39.9",
     "pandas-stubs>=3.0.5.260730",
     "ruff>=0.16.1",
+    "scipy-stubs>=1.18.1.0",
 ]
 
 [tool.ruff]

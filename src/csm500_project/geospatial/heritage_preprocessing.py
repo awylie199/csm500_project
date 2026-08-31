@@ -7,11 +7,11 @@ import geopandas as gpd
 import numpy as np
 from pyproj import CRS
 
+from csm500_project.constant import EPSG_27700_CRS
+
 _HERITAGE_LIST_FILE: Final[Path] = (
     Path(__file__).parent.parent / "data" / "heritage" / "National_Heritage_List_for_England_NHLE_v02_VIEW_4825054924992358738.gpkg"
 )
-
-EPSG_27700_CRS: Final[str] = "EPSG:27700"
 
 
 def _map_listing_grade(value: object) -> int:
@@ -41,7 +41,7 @@ def preprocess_heritage_data(applications_gdf: gpd.GeoDataFrame) -> gpd.GeoDataF
         _HERITAGE_LIST_FILE,
         date_format="%Y-%m-%d, %H:%M",
         parse_dates=["ListDate"],
-        dtype={"Grade": "category", "Easting": int, "Northing": int},
+        dtype={"Grade": "category", "Easting": "float64", "Northing": "float64"},
         usecols=["Grade", "Easting", "Northing", "ListDate"],
     )
 
