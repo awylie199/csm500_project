@@ -9,15 +9,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pyproj import CRS
 
-from csm500_project.constant import NO_PLOTS
-from csm500_project.util import get_plot_lims, is_not_empty
+from csm500_project.constant import EPSG_4326_CRS, NO_PLOTS
+from csm500_project.util import get_plot_lims, is_not_empty, is_within_area
 
-_DATA_PATH = Path(__file__).parent.parent / "data"
-_WOODLANDS_FILE: Final[Path] = _DATA_PATH / "environmental" / "Ancient_Woodland_England_-5278492453441969325.gpkg"
-_FLOOD_RISK_FILE_PART_1: Final[Path] = _DATA_PATH / "environmental" / "flood-risk-zone.part01.csv"
-_FLOOD_RISK_FILE_PART_2: Final[Path] = _DATA_PATH / "environmental" / "flood-risk-zone.part02.csv"
-_GREEN_BELT_FILE: Final[Path] = _DATA_PATH / "environmental" / "green-belt.csv"
-_GEOHAZARDS_FILE: Final[Path] = _DATA_PATH / "environmental" / "GB_Hex_5km_GeoSure_All_V8.gpkg"
+_DATA_PATH = Path(__file__).parent.parent / "data" / "environmental"
+_WOODLANDS_FILE: Final[Path] = _DATA_PATH / "Ancient_Woodland_England_-5278492453441969325.gpkg"
+_FLOOD_RISK_FILE_PART_1: Final[Path] = _DATA_PATH / "flood-risk-zone.part01.csv"
+_FLOOD_RISK_FILE_PART_2: Final[Path] = _DATA_PATH / "flood-risk-zone.part02.csv"
+_GREEN_BELT_FILE: Final[Path] = _DATA_PATH / "green-belt.csv"
+_GEOHAZARDS_FILE: Final[Path] = _DATA_PATH / "GB_Hex_5km_GeoSure_All_V8.gpkg"
 
 
 def _get_flood_risk_gdf(applications_gdf_crs: CRS) -> gpd.GeoDataFrame:
@@ -34,7 +34,7 @@ def _get_flood_risk_gdf(applications_gdf_crs: CRS) -> gpd.GeoDataFrame:
     return gpd.GeoDataFrame(
         flood_risk_df,
         geometry=gpd.GeoSeries.from_wkt(flood_risk_df["geometry"], on_invalid="warn"),
-        crs="EPSG:4326",
+        crs=EPSG_4326_CRS,
     ).to_crs(applications_gdf_crs)
 
 
@@ -87,12 +87,8 @@ def _get_green_belt_gdf(applications_gdf_crs: CRS) -> gpd.GeoDataFrame:
     return gpd.GeoDataFrame(
         green_belt_df,
         geometry=gpd.GeoSeries.from_wkt(green_belt_df["geometry"], on_invalid="warn"),
-        crs="EPSG:4326",
+        crs=EPSG_4326_CRS,
     ).to_crs(applications_gdf_crs)
-
-
-def _is_within_area(x):
-    return (x.notna().any()).astype(int)
 
 
 def _plot_environmental_maps(
@@ -100,13 +96,12 @@ def _plot_environmental_maps(
     environmental_gdf: gpd.GeoDataFrame | None,
     hazard_environmental_gdf: gpd.GeoDataFrame | None,
     title: str = "",
-    x_lim: tuple[float, float] | None = None,
-    y_lim: tuple[float, float] | None = None,
 ) -> None:
     """Plot Environmental Data Against Applications"""
     if NO_PLOTS:
         return
 
+    x_lim, y_lim = get_plot_lims(applications_gdf)
     _, ax = plt.subplots(figsize=(12, 12))
 
     if environmental_gdf is not None:
@@ -202,21 +197,39 @@ def preprocess_environmental_data(applications_gdf: gpd.GeoDataFrame) -> gpd.Geo
 
         applications_gdf.rename(columns={"CLASS": f"{layer} Susceptibility"}, inplace=True)
 
-    applications_gdf["In Flood Zone"] = applications_gdf.groupby(level=0)["index_flood_risk"].apply(_is_within_area)
+    applications_gdf["In Flood Zone"] = applications_gdf.groupby(level=0)["index_flood_risk"].apply(is_within_area)
     print(f"Applications within Flood Zone\n {applications_gdf['In Flood Zone'].value_counts()}")
-    _plot_environmental_maps(applications_gdf, flood_risk_gdf, None, "Applications Within Flood Zones", *get_plot_lims(applications_gdf))
+    _plot_environmental_maps(
+        applications_gdf,
+        flood_risk_gdf,
+        None,
+        "Applications Within Flood Zones",
+    )
 
-    applications_gdf["In Green Belt"] = applications_gdf.groupby(level=0)["index_green_belt"].apply(_is_within_area)
+    applications_gdf["In Green Belt"] = applications_gdf.groupby(level=0)["index_green_belt"].apply(is_within_area)
     print(f"Applications within Green Belt\n {applications_gdf['In Green Belt'].value_counts()}")
-    _plot_environmental_maps(applications_gdf, green_belt_gdf, None, "Applications Within Green Belts", *get_plot_lims(applications_gdf))
+    _plot_environmental_maps(
+        applications_gdf,
+        green_belt_gdf,
+        None,
+        "Applications Within Green Belts",
+    )
 
-    applications_gdf["In Ancient Woodlands"] = applications_gdf.groupby(level=0)["index_woodlands"].apply(_is_within_area)
+    applications_gdf["In Ancient Woodlands"] = applications_gdf.groupby(level=0)["index_woodlands"].apply(is_within_area)
     print(f"Applications within Ancient Woodlands\n {applications_gdf['In Ancient Woodlands'].value_counts()}")
     _plot_environmental_maps(
-        applications_gdf, woodlands_gdf, None, "Applications Within Ancient Woodlands", *get_plot_lims(applications_gdf)
+        applications_gdf,
+        woodlands_gdf,
+        None,
+        "Applications Within Ancient Woodlands",
     )
 
     for layer, geohazard_gdf in geohazards_gdfs.items():
-        _plot_environmental_maps(applications_gdf, None, geohazard_gdf, f"Applications Within {layer}", *get_plot_lims(applications_gdf))
+        _plot_environmental_maps(
+            applications_gdf,
+            None,
+            geohazard_gdf,
+            f"Applications Within {layer}",
+        )
 
     return applications_gdf

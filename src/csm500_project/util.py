@@ -9,7 +9,7 @@ def is_not_empty(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
-def get_plot_lims(gdf: gpd.GeoDataFrame) -> tuple[tuple[float, float], tuple[float, float]]:
+def get_plot_lims(gdf: gpd.GeoDataFrame | gpd.GeoSeries) -> tuple[tuple[float, float], tuple[float, float]]:
     """Get Plot Limits with Padding"""
 
     minx, miny, maxx, maxy = gdf.total_bounds
@@ -21,3 +21,7 @@ def get_plot_lims(gdf: gpd.GeoDataFrame) -> tuple[tuple[float, float], tuple[flo
         (minx - xrange * padding, maxx + xrange * padding),
         (miny - yrange * padding, maxy + yrange * padding),
     )
+
+
+def is_within_area(x):
+    return (x.notna().any()).astype(int)

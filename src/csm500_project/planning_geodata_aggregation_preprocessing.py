@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pyproj.crs import CRS
 
-from .constant import NO_PLOTS
-from .util import get_plot_lims, is_not_empty
+from .constant import NO_PLOTS, EPSG_4326_CRS
+from .util import get_plot_lims, is_not_empty, is_within_area
 
 LSOA_GPKG_FILE: Final[Path] = (
     Path(__file__).parent / "data" / "Lower_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V5_-6970154227154374572.gpkg"
@@ -99,7 +99,7 @@ def _get_applications_gdf(applications_df: pd.DataFrame) -> tuple[gpd.GeoDataFra
     applications_gdf: gpd.GeoDataFrame = gpd.GeoDataFrame(
         applications_df.copy(),
         geometry=gpd.GeoSeries.from_wkt(applications_df["Point"]),
-        crs="EPSG:4326",
+        crs=EPSG_4326_CRS,
     )
 
     applications_gdf_crs: CRS | None = applications_gdf.crs
@@ -180,7 +180,7 @@ def _get_conservation_areas_gdf(applications_gdf_crs: CRS) -> gpd.GeoDataFrame:
     conservation_areas_gdf = gpd.GeoDataFrame(
         conservation_areas_df,
         geometry=gpd.GeoSeries.from_wkt(conservation_areas_df["geometry"], on_invalid="warn"),
-        crs="EPSG:4326",
+        crs=EPSG_4326_CRS,
     )
     conservation_areas_gdf_crs: CRS | None = conservation_areas_gdf.crs
 
@@ -321,8 +321,8 @@ def preprocess_aggregate_geodata(df: pd.DataFrame) -> gpd.GeoDataFrame:
     )
 
     # Applications may fall within overlapping conservation areas
-    applications_gdf["In Conservation Area"] = (
-        applications_gdf_with_conservation_areas.groupby(level=0)["index_conservation_area"].apply(lambda x: x.notna().any()).astype(int)
+    applications_gdf["In Conservation Area"] = applications_gdf_with_conservation_areas.groupby(level=0)["index_conservation_area"].apply(
+        is_within_area
     )
 
     print(f"Applications within Conservation Areas\n {applications_gdf['In Conservation Area'].value_counts()}")

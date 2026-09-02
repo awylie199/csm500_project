@@ -12,12 +12,13 @@ from scipy.spatial import cKDTree
 
 from csm500_project.constant import EPSG_27700_CRS, USE_UPRN_CACHE
 
-_GRANDPARENT_PATH = Path(__file__).parent.parent
-_COMMERCIAL_CERTS_FILE: Final[Path] = _GRANDPARENT_PATH / "data" / "physical" / "commercial_energy_certs.csv"
-_DOMESTIC_CERTS_FILE: Final[Path] = _GRANDPARENT_PATH / "data" / "physical" / "domestic_energy_certs.csv"
-_UPRN_FILE_PART_1: Final[Path] = _GRANDPARENT_PATH / "data" / "physical" / "osopenuprn_202608.part01.csv"
-_UPRN_FILE_PART_2: Final[Path] = _GRANDPARENT_PATH / "data" / "physical" / "osopenuprn_202608.part02.csv"
-_UPRN_FILE_PART_3: Final[Path] = _GRANDPARENT_PATH / "data" / "physical" / "osopenuprn_202608.part03.csv"
+_GRANDPARENT_PATH: Final[Path] = Path(__file__).parent.parent
+_DATA_PATH: Final[Path] = _GRANDPARENT_PATH / "data" / "physical"
+_COMMERCIAL_CERTS_FILE: Final[Path] = _DATA_PATH / "commercial_energy_certs.csv"
+_DOMESTIC_CERTS_FILE: Final[Path] = _DATA_PATH / "domestic_energy_certs.csv"
+_UPRN_FILE_PART_1: Final[Path] = _DATA_PATH / "osopenuprn_202608.part01.csv"
+_UPRN_FILE_PART_2: Final[Path] = _DATA_PATH / "osopenuprn_202608.part02.csv"
+_UPRN_FILE_PART_3: Final[Path] = _DATA_PATH / "osopenuprn_202608.part03.csv"
 _APPLICATIONS_WITH_UPRN_PARQUET_PATH = _GRANDPARENT_PATH / "cache" / "applications_with_uprn.parquet"
 
 
@@ -48,13 +49,16 @@ def _get_certs_df() -> pd.DataFrame:
     domestic_df: pd.DataFrame = pd.read_csv(
         _DOMESTIC_CERTS_FILE, usecols=[*cols, "total_floor_area"], dtype={**dtype, "total_floor_area": int}, keep_default_na=False
     )
+    domestic_df.rename(columns={"total_floor_area": "Floor Area (m^2)"}, inplace=True)
+
     commercial_df: pd.DataFrame = pd.read_csv(
         _COMMERCIAL_CERTS_FILE, usecols=[*cols, "floor_area"], dtype={**dtype, "floor_area": int}, keep_default_na=False
     )
-    domestic_df["domestic"] = 1
-    commercial_df["domestic"] = 0
+    commercial_df.rename(columns={"floor_area": "Floor Area (m^2)"}, inplace=True)
+    domestic_df["Is Domestic"] = 1
+    commercial_df["Is Domestic"] = 0
 
-    return pd.concat([domestic_df, commercial_df], ignore_index=True)
+    return pd.concat([domestic_df, commercial_df], ignore_index=True).rename(columns={"property_type": "Property Type"})
 
 
 def _check_join(applications_with_uprn: gpd.GeoDataFrame, applications_gdf: gpd.GeoDataFrame):
@@ -217,4 +221,4 @@ def preprocess_physical_data(applications_gdf: gpd.GeoDataFrame) -> gpd.GeoDataF
         left_on="UPRN",
         right_on="uprn",
         how="left",
-    )
+    ).drop(columns=["X_COORDINATE", "Y_COORDINATE", "UPRN", "uprn"])
