@@ -4,18 +4,14 @@ import os
 from pathlib import Path
 from typing import Final
 
-import contextily as cx
 import dask_geopandas as dgpd
 import datashader as ds
 import datashader.transfer_functions as tf
 import geopandas as gpd
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from geopandas.geoseries import GeoSeries
-from numpy.typing import NDArray
 from pyproj import CRS
-from shapely.geometry.base import BaseGeometry
 
 from csm500_project.constant import EPSG_4326_CRS, EPSG_27700_CRS, NO_PLOTS
 from csm500_project.util import get_plot_lims, is_within_area
@@ -36,7 +32,7 @@ _BROWNFIELDS_CATEGORY_FIELD: Final[str] = "Near Brownfield Site"
 _BUILT_UP_AREAS_CATEGORY_FIELD: Final[str] = "In Built Up Area"
 _SPECIAL_AREAS_OF_CONSERVATION_CATEGORY_FIELD: Final[str] = "In Special Area of Conservation"
 _ARTICLE_4_DIRECTION_CATEGORY_FIELD: Final[str] = "In Article 4 Area"
-_PARISH_CATEGORY_FIELD: Final[str] = "Parish"
+_PARISH_CATEGORY_FIELD: Final[str] = "Parish Code"
 _CATEGORY_FIELDS: Final[list[str]] = [
     _BROWNFIELDS_CATEGORY_FIELD,
     _BUILT_UP_AREAS_CATEGORY_FIELD,
