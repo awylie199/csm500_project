@@ -55,7 +55,7 @@ def _plot(series: pd.Series, label: str) -> None:
     plt.show()
 
 
-def continuous_data_analysis(x_train: gpd.GeoDataFrame) -> None:
+def continuous_data_analysis(x_train: gpd.GeoDataFrame) -> pd.Series:
     """Analyse the continuous data within the aggregated applications dataset"""
 
     floor_area_feature: pd.Series = x_train[_CONTINUOUS_DATA_FIELDS[0]]
@@ -112,3 +112,5 @@ def continuous_data_analysis(x_train: gpd.GeoDataFrame) -> None:
     _print_normaltest(boxcox_floor_area_feature_series)
     _print_jarque_bera(boxcox_floor_area_feature_series)
     _plot(boxcox_floor_area_feature_series, "Box-Cox Transform Floor Area")
+
+    return boxcox_floor_area_feature_series

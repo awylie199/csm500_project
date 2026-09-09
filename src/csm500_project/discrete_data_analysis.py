@@ -153,7 +153,7 @@ def discrete_data_analysis(x_train: gpd.GeoDataFrame, y_train: gpd.GeoDataFrame)
 
     # No variance
     x_train.drop(
-        columns=_DROPPED_CATEGORIES,
+        columns=list(_DROPPED_CATEGORIES),
         inplace=True,
     )
 

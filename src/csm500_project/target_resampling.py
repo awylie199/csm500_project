@@ -24,7 +24,6 @@ def resample_target(x_train: pd.DataFrame | gpd.GeoDataFrame, y_train: pd.DataFr
     """Split the dataset into a Primary Dataset, and a smaller second dataset which contains the primary dataset and physical property columns with complete values."""
 
     # Balance the target field
-
     datasets = split_primary_physical_datasets(x_train, y_train)
 
     _plot_target_distribution(datasets["y_primary"], "Primary Target (Application Result) Distribution")
