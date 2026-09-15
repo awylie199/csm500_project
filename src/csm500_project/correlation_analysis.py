@@ -100,7 +100,7 @@ def _plot_correlation_matrices(x_train: pd.DataFrame, columns: tuple[str, ...], 
     _print_correlations_matrix(pearsons_correlation_df, names, "Spearman", title)
 
 
-def _plot_mutual_info_heatmap(x_train: pd.DataFrame, y_train: pd.Series, title: str) -> None:
+def _plot_mutual_info_heatmap(x_train: pd.DataFrame, y_train: pd.Series, title: str) -> tuple[pd.DataFrame, pd.Series[Any]]:
     """Plot a heatmap ranking of mutual info scores for variables and pairwise features"""
     pf_correlation_analysis_df: pd.DataFrame = x_train.copy(deep=True).drop(columns=["Description"])
     polynomial_features_transformer: PolynomialFeatures = PolynomialFeatures(include_bias=False)
@@ -110,25 +110,35 @@ def _plot_mutual_info_heatmap(x_train: pd.DataFrame, y_train: pd.Series, title: 
         index=x_train.index,
     )
 
-    mi_scores = mutual_info_classif(pf_correlation_analysis_df, y_train, random_state=42)
-    mi_series: pd.Series = pd.Series(mi_scores, index=pf_correlation_analysis_df.columns).sort_values(ascending=False).head(15)
-    mi_matrix = mi_series.values.reshape(-1, 1)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
+    mutual_info_scores = mutual_info_classif(pf_correlation_analysis_df, y_train, random_state=42)
+    mutual_info_scores_series: pd.Series = pd.Series(mutual_info_scores, index=pf_correlation_analysis_df.columns).sort_values(
+        ascending=False
+    )
+    mutual_info_scores_top_15_series = mutual_info_scores_series.head(15)
+
+    with pd.option_context("display.max_rows", None, "display.max_colwidth", None):
+        print("Mutual Info Class Scores:")
+        print(mutual_info_scores_series)
+
+    mutual_info_scores_matrix = mutual_info_scores_top_15_series.values.reshape(-1, 1)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
 
     _, ax = plt.subplots(figsize=(6, 8))
-    _ = ax.imshow(mi_matrix, cmap="Blues", aspect="auto")
-    _ = ax.set_yticks(range(len(mi_series)))
-    _ = ax.set_yticklabels(mi_series.index, fontsize=10)
+    _ = ax.imshow(mutual_info_scores_matrix, cmap="Blues", aspect="auto")
+    _ = ax.set_yticks(range(len(mutual_info_scores_top_15_series)))
+    _ = ax.set_yticklabels(mutual_info_scores_top_15_series.index, fontsize=10)
     _ = ax.set_xticks([])
 
     # Annotate numerical values inside the cells
-    for i in range(len(mi_series)):
-        score: Categorical | Any = mi_matrix[i, 0]
-        text_color = "white" if score > mi_matrix.max() / 2 else "black"  # pyright: ignore[reportUnknownMemberType, reportOperatorIssue]
+    for i in range(len(mutual_info_scores_top_15_series)):
+        score: Categorical | Any = mutual_info_scores_matrix[i, 0]
+        text_color = "white" if score > mutual_info_scores_matrix.max() / 2 else "black"  # pyright: ignore[reportUnknownMemberType, reportOperatorIssue]
         _ = ax.text(0, i, f"{score:.3f}", ha="center", va="center", color=text_color, fontsize=10)
 
     _ = plt.title(f"{title} Top 15 Mutual Info Scores", fontsize=12, pad=15)
     plt.tight_layout()
     plt.show()
+
+    return pf_correlation_analysis_df, mutual_info_scores_series
 
 
 def _print_text_correlations(text_transforms_dfs: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]) -> None:
@@ -148,16 +158,26 @@ def _print_text_correlations(text_transforms_dfs: tuple[pd.DataFrame, pd.DataFra
 
 def correlation_analysis(
     x_train: pd.DataFrame, y_train: pd.DataFrame, text_transforms_dfs: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]
-) -> None:
+) -> tuple[tuple[pd.DataFrame, pd.Series, pd.DataFrame], tuple[pd.DataFrame, pd.Series, pd.DataFrame]]:
     """Correlation Analysis for Pre-Feature Selection"""
+    print(x_train.shape)
     print(x_train.columns)
     print(y_train.columns)
 
     datasets = split_primary_physical_datasets(x_train, y_train)
+
     primary_columns: tuple[str, ...] = tuple([c for c in _CORRELATIONS_NAMES if c not in _PHYSICAL_FIELDS])
     _plot_correlation_matrices(datasets["x_primary"], primary_columns, "Primary Dataset")
     _plot_correlation_matrices(datasets["x_physical"], tuple(_CORRELATIONS_NAMES.keys()), "Physical Dataset")
-    _plot_mutual_info_heatmap(datasets["x_primary"], datasets["y_primary"][INFERRED_TARGET_FIELD], "Primary Dataset")
-    _plot_mutual_info_heatmap(datasets["x_physical"], datasets["y_physical"][INFERRED_TARGET_FIELD], "Physical Dataset")
-
     _print_text_correlations(text_transforms_dfs)
+
+    return (
+        (
+            *_plot_mutual_info_heatmap(datasets["x_primary"], datasets["y_primary"][INFERRED_TARGET_FIELD], "Primary Dataset"),
+            datasets["y_primary"],
+        ),
+        (
+            *_plot_mutual_info_heatmap(datasets["x_physical"], datasets["y_physical"][INFERRED_TARGET_FIELD], "Physical Dataset"),
+            datasets["y_physical"],
+        ),
+    )

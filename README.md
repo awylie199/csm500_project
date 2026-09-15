@@ -1,3 +1,4 @@
 ```commandline
-   uv run pyoject.ipynb
+   uv run feature_development.ipynb
+   uv run model_development.ipynb
 ```
