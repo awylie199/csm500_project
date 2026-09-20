@@ -9,5 +9,10 @@ USE_UPRN_CACHE: Final[bool] = False
 EPSG_27700_CRS: Final[str] = "EPSG:27700"
 EPSG_4326_CRS: Final[str] = "EPSG:4326"
 
-PRIMARY_DATASET_PATH: Final[Path] = Path(__file__).parent / "cache" / "primary_dataset.parquet"
-PHYSICAL_DATASET_PATH: Final[Path] = Path(__file__).parent / "cache" / "physical_dataset.parquet"
+RAW_TRAIN_DATASET_X_PATH: Final[Path] = Path(__file__).parent / "cache" / "raw_train_dataset_x.parquet"
+RAW_TRAIN_DATASET_Y_PATH: Final[Path] = Path(__file__).parent / "cache" / "raw_train_dataset_y.parquet"
+RAW_TEST_DATASET_X_PATH: Final[Path] = Path(__file__).parent / "cache" / "raw_test_dataset_x.parquet"
+RAW_TEST_DATASET_Y_PATH: Final[Path] = Path(__file__).parent / "cache" / "raw_test_dataset_y.parquet"
+
+FINAL_TRAIN_PRIMARY_DATASET_PATH: Final[Path] = Path(__file__).parent / "cache" / "final_train_primary_dataset.parquet"
+FINAL_TRAIN_PHYSICAL_DATASET_PATH: Final[Path] = Path(__file__).parent / "cache" / "final_train_physical_dataset.parquet"

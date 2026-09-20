@@ -16,14 +16,20 @@ _RANDOM_STATE: Final[int] = 20260908
 _PHYSICAL_FIELDS: Final[tuple[str, ...]] = (
     "Floor Area (m^2)",
     "Is Domestic",
-    "Property Type",
+    "Property Type_0",
+    "Property Type_1",
+    "Property Type_2",
 )
 
 _CORRELATIONS_NAMES: Final[dict[str, str]] = {
-    "Development Classification": "Dev Cl.",
+    "Development Classification_0": "Dev Cl.0",
+    "Development Classification_1": "Dev Cl.1",
+    "Development Classification_2": "Dev Cl.2",
     "Decision Date Year Of Transfer": "Y. Tra.",
     "Decision Date Quarter Of Transfer": "Q. Tra.",
-    "LSOA Code": "LSOA",
+    "LSOA Code_0": "LSOA 0",
+    "LSOA Code_1": "LSOA 1",
+    "LSOA Code_2": "LSOA 2",
     "IMD Rank": "IMD R.",
     "IMD Decile": "IMD D.",
     "In Conservation Area": "Cons.",
@@ -32,7 +38,9 @@ _CORRELATIONS_NAMES: Final[dict[str, str]] = {
     "Geohazards Shrink Swell Susceptibility": "Geo Shr.",
     "Geohazards Soluble Rocks Susceptibility": "Geo Sol.",
     "In Flood Zone": " Flood",
-    "Property Type": "Prop. Ty.",
+    "Property Type_0": "Prop. Ty.0",
+    "Property Type_1": "Prop. Ty.1",
+    "Property Type_2": "Prop. Ty.2",
     "Floor Area (m^2)": "Flo. Area",
     "Is Domestic": "Dom.",
     "Near Brownfield Site": "Brow.",
@@ -164,7 +172,7 @@ def correlation_analysis(
     print(x_train.columns)
     print(y_train.columns)
 
-    datasets = split_primary_physical_datasets(x_train, y_train)
+    datasets = split_primary_physical_datasets(x_train, y_train, True)
 
     primary_columns: tuple[str, ...] = tuple([c for c in _CORRELATIONS_NAMES if c not in _PHYSICAL_FIELDS])
     _plot_correlation_matrices(datasets["x_primary"], primary_columns, "Primary Dataset")

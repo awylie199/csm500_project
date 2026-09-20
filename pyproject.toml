@@ -5,7 +5,6 @@ description = "UOL CSM 500 Project"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "category-encoders>=2.11.1",
     "contextily>=1.7.1",
     "dask-geopandas>=0.5.0",
     "datashader>=0.19.1",
@@ -14,7 +13,7 @@ dependencies = [
     "ipykernel>=7.3.0",
     "jupyterlab>=4.6.3",
     "lightgbm>=4.7.0",
-    "matplotlib>=3.11.1",
+    "matplotlib>=3.11.2",
     "numpy>=2.5.3",
     "pandas>=3.0.5",
     "pyarrow>=25.0.1",

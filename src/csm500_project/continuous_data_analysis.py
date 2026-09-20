@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.stats import boxcox, jarque_bera, kurtosis, median_abs_deviation, norm, normaltest, probplot, skew, trim_mean
 
-_CONTINUOUS_DATA_FIELDS: Final[tuple[str, ...]] = ("Floor Area (m^2)",)
+CONTINUOUS_DATA_FIELDS: Final[tuple[str, ...]] = ("Floor Area (m^2)",)
 
 
 def _print_pass_normal_distribution_test(pvalue: float):
@@ -58,7 +58,7 @@ def _plot(series: pd.Series, label: str) -> None:
 def continuous_data_analysis(x_train: gpd.GeoDataFrame) -> pd.Series:
     """Analyse the continuous data within the aggregated applications dataset"""
 
-    floor_area_feature: pd.Series = x_train[_CONTINUOUS_DATA_FIELDS[0]]
+    floor_area_feature: pd.Series = x_train[CONTINUOUS_DATA_FIELDS[0]]
 
     print("Floor Area M^2 Univariate Analysis:")
     print("----------------------------------")

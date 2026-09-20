@@ -29,9 +29,10 @@ def is_within_area(x):
 
 
 def split_primary_physical_datasets(
-    x_df: pd.DataFrame | gpd.GeoDataFrame, y_df: pd.DataFrame | gpd.GeoDataFrame
+    x_df: pd.DataFrame | gpd.GeoDataFrame, y_df: pd.DataFrame | gpd.GeoDataFrame, after_encoding: bool = True
 ) -> dict[str, pd.DataFrame | gpd.GeoDataFrame]:
-    physical_cols: list[str] = ["Property Type", "Is Domestic", "Floor Area (m^2)"]
+    encoded_physical_cols: list[str] = ["Property Type_0", "Property Type_1", "Property Type_2"] if after_encoding else ["Property Type"]
+    physical_cols: list[str] = [*encoded_physical_cols, "Is Domestic", "Floor Area (m^2)"]
     not_na = x_df[physical_cols].notna().all(axis=1)
 
     return {
