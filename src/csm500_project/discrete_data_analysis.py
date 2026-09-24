@@ -6,12 +6,12 @@ from typing import Final
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder, TargetEncoder
+from sklearn.preprocessing import LabelEncoder, OrdinalEncoder, TargetEncoder
 from statsmodels.graphics.mosaicplot import mosaic
 
 from .constant import INFERRED_TARGET_FIELD
 
-_ORDINAL_CATEGORIES: Final[tuple[str, ...]] = (
+X_ORDINAL_ENCODED_CATEGORIES: Final[tuple[str, ...]] = (
     "Entry Date Year Of Transfer",
     "Entry Date Quarter Of Transfer",
     "Decision Date Year Of Transfer",
@@ -19,18 +19,18 @@ _ORDINAL_CATEGORIES: Final[tuple[str, ...]] = (
     "IMD Rank",
     "IMD Decile",
     "Listing Grade",
-)
-_NON_ORDINAL_CATEGORIES: Final[tuple[str, ...]] = (
-    "Organisation Entity",
-    "Development Classification",
-    "LSOA Code",
-    "Council Code",
     "Geohazards Collapsible Deposits Susceptibility",
     "Geohazards Compressible Ground Susceptibility",
     "Geohazards Landslides Susceptibility",
     "Geohazards Running Sand Susceptibility",
     "Geohazards Shrink Swell Susceptibility",
     "Geohazards Soluble Rocks Susceptibility",
+)
+_NON_ORDINAL_CATEGORIES: Final[tuple[str, ...]] = (
+    "Organisation Entity",
+    "Development Classification",
+    "LSOA Code",
+    "Council Code",
     "In Conservation Area",
     "In Ancient Woodlands",
     "In Green Belt",
@@ -53,12 +53,6 @@ DROPPED_CATEGORIES: Final[tuple[str, ...]] = (
     "In Special Area of Conservation",
 )
 _BINNED_CATEGORIES: Final[tuple[str, ...]] = ("IMD Decile",)
-X_LABEL_ENCODED_CATEGORIES: Final[tuple[str, ...]] = (
-    "Geohazards Collapsible Deposits Susceptibility",
-    "Geohazards Running Sand Susceptibility",
-    "Geohazards Shrink Swell Susceptibility",
-    "Geohazards Soluble Rocks Susceptibility",
-)
 HIGH_CARDINALITY_ENCODED_CATEGORIES: Final[tuple[str, ...]] = ("LSOA Code", "Development Classification", "Property Type")
 LOW_CARDINALITY_ENCODED_CATEGORIES: Final[tuple[str, ...]] = ("Organisation Entity", "Council Code", "Listing Grade", "Parish Code")
 _DUMMY_ENCODED_CATEGORIES: Final[tuple[str, ...]] = (
@@ -136,7 +130,7 @@ def _plot_mosaic_contingency(encoded_applications_df: pd.DataFrame, x_field: str
 def discrete_data_analysis(x_train: gpd.GeoDataFrame | pd.DataFrame, y_train: gpd.GeoDataFrame) -> tuple[pd.DataFrame, gpd.GeoDataFrame]:
     """Analyse the discrete data within the aggregated applications dataset"""
 
-    for category in [*_NON_ORDINAL_CATEGORIES, *_ORDINAL_CATEGORIES]:
+    for category in [*_NON_ORDINAL_CATEGORIES, *X_ORDINAL_ENCODED_CATEGORIES]:
         if category not in _BINNED_CATEGORIES:
             print(f"{x_train.groupby(category).size()}\n")
 
@@ -152,8 +146,8 @@ def discrete_data_analysis(x_train: gpd.GeoDataFrame | pd.DataFrame, y_train: gp
     y_train[INFERRED_TARGET_FIELD] = LabelEncoder().fit_transform(y_train[INFERRED_TARGET_FIELD])
     print(f"{y_train.groupby(INFERRED_TARGET_FIELD).size()}\n")
 
-    for category in X_LABEL_ENCODED_CATEGORIES:
-        x_train[category] = LabelEncoder().fit_transform(x_train[category])
+    for category in [c for c in X_ORDINAL_ENCODED_CATEGORIES if c not in DROPPED_CATEGORIES]:
+        x_train[category] = OrdinalEncoder().fit_transform(x_train[category])
 
     target_encoder: TargetEncoder = TargetEncoder(target_type="multiclass", cv=5, smooth="auto")
     encoded_x_categories = target_encoder.fit_transform(x_train[list(HIGH_CARDINALITY_ENCODED_CATEGORIES)], y_train)
