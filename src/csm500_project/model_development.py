@@ -41,7 +41,7 @@ _SCORING_METRICS: Final[dict[str, tuple[str, str]]] = {
     "F1 Macro": ("f1_macro", "f1_macro"),
 }
 
-_PROBABILISTIC_SCORING_METRICS: Final[dict[str, tuple[str, str]]] = {
+PROBABILISTIC_SCORING_METRICS: Final[dict[str, tuple[str, str]]] = {
     **_SCORING_METRICS,
     "ROC AUC": ("roc_auc", "roc_auc_ovr"),
 }
@@ -70,7 +70,7 @@ def fit_model_and_estimate(
 
     # _debug_pipeline_step(pipeline, x_train, y_train, 8)
     model_scoring_metrics: dict[str, tuple[str, str]] = (
-        _PROBABILISTIC_SCORING_METRICS if hasattr(model, "predict_proba") else _SCORING_METRICS
+        PROBABILISTIC_SCORING_METRICS if hasattr(model, "predict_proba") else _SCORING_METRICS
     )
     stratified_kfold: StratifiedKFold = StratifiedKFold(n_splits=3, shuffle=True, random_state=_SEED)
 
