@@ -23,6 +23,7 @@ dependencies = [
     "sentence-transformers>=6.1.0",
     "shapely>=2.1.2",
     "statsmodels>=0.15.0",
+    "torch>=2.14.0",
 ]
 
 [dependency-groups]

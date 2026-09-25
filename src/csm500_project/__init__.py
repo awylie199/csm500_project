@@ -2,6 +2,7 @@ from .constant import INFERRED_TARGET_FIELD
 from .continuous_data_analysis import continuous_data_analysis
 from .correlation_analysis import correlation_analysis
 from .discrete_data_analysis import discrete_data_analysis
+from .ensemble_model_development import run_kneighbours_bagging_classifier_pipeline
 from .feature_selection import evaluate_text_representations, feature_selection
 from .model_development import run_model_pipeline
 from .model_pipeline import get_build_model_pipeline
@@ -23,4 +24,5 @@ __all__ = [
     "preprocess_planning_data",
     "run_model_pipeline",
     "text_data_analysis",
+    "run_kneighbours_bagging_classifier_pipeline",
 ]

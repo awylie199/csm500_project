@@ -1,7 +1,17 @@
 """Project Utilities"""
 
+from collections.abc import Sequence
+
 import geopandas as gpd
+import matplotlib.pyplot as plt
 import pandas as pd
+from sklearn.calibration import CalibrationDisplay
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    PrecisionRecallDisplay,
+    RocCurveDisplay,
+)
+from sklearn.preprocessing import label_binarize
 
 
 def is_not_empty(value: object) -> bool:
@@ -41,3 +51,60 @@ def split_primary_physical_datasets(
         "y_primary": y_df.copy(deep=True),
         "y_physical": y_df.copy(deep=True).loc[not_na],
     }
+
+
+def print_confusion_matrix(y_test, y_pred, title: str) -> None:
+    """Print a confusion matrix for the model"""
+    _, ax = plt.subplots(figsize=(8, 8))
+    _ = ConfusionMatrixDisplay.from_predictions(y_true=y_test, y_pred=y_pred, ax=ax)
+    ax.set_title(title)
+    plt.show()
+
+
+def print_calibration_display(classes: Sequence[tuple[int, str]], results, y_true, title: str) -> None:
+    """Print a calibration display for the model"""
+    _, ax = plt.subplots(figsize=(8, 8))
+
+    for i, class_name in enumerate(classes):
+        class_results = results[:, i]
+        print(class_name, class_results)
+        y_test_binary = (y_true == class_name).astype(int)
+
+        _ = CalibrationDisplay.from_predictions(y_test_binary, class_results, n_bins=10, ax=ax, name=f"Class {class_name}")
+
+    ax.set_title(title)
+    plt.show()
+
+
+def print_precision_recall_display(classes: Sequence[tuple[int, str]], results, y_true, title: str, is_probabilistic: bool) -> None:
+    """Print a precision/recall display for the model"""
+    _, ax = plt.subplots(figsize=(8, 8))
+
+    for i, class_name in enumerate(classes):
+        class_results = results[:, i]
+
+        if is_probabilistic:
+            print(class_name, class_results)
+            y_test_binary = (y_true == class_name).astype(int)
+        else:
+            y_test_binary = label_binarize(y_true, classes=classes)[:, i]
+
+        _ = PrecisionRecallDisplay.from_predictions(y_test_binary, class_results, ax=ax, name=f"Class {class_name}")
+
+    ax.set_title(title)
+    plt.show()
+
+
+def print_roc_curve_display(classes: Sequence[tuple[int, str]], results, y_true, title: str) -> None:
+    """Print a ROC curve display for the model"""
+    _, ax = plt.subplots(figsize=(8, 8))
+
+    for i, class_name in enumerate(classes):
+        class_results = results[:, i]
+        print(class_name, class_results)
+        y_test_binary = (y_true == class_name).astype(int)
+
+        _ = RocCurveDisplay.from_predictions(y_test_binary, class_results, ax=ax, name=f"Class {class_name}")
+
+    ax.set_title(title)
+    plt.show()

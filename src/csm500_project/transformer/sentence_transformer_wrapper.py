@@ -26,7 +26,7 @@ class SentenceTransformerWrapper(BaseEstimator, TransformerMixin):
         embeddings = self.model_.encode(
             x.iloc[:, 0].astype(str).tolist(),
             normalize_embeddings=True,
-            batch_size=16,
+            batch_size=8,
             device="cuda",
         )
 

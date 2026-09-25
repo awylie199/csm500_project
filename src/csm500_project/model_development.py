@@ -1,20 +1,15 @@
 """Run and Evaluate Models Across the Feature Development Pipeline"""
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Any, Final
 
-import matplotlib.pyplot as plt
 import pandas as pd
 from imblearn.pipeline import Pipeline
 from joblib import Memory
 from sklearn.base import BaseEstimator
-from sklearn.calibration import CalibrationDisplay
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import (
-    ConfusionMatrixDisplay,
-    PrecisionRecallDisplay,
-    RocCurveDisplay,
     average_precision_score,
     classification_report,
     confusion_matrix,
@@ -24,6 +19,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import label_binarize
 from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
+
+from .util import print_calibration_display, print_confusion_matrix, print_precision_recall_display, print_roc_curve_display
 
 _SEED: Final[int] = 20260920
 _MAX_ITERATIONS: Final[int] = 1
@@ -58,63 +55,6 @@ def _debug_pipeline_step(pipeline: Pipeline, x_train: pd.DataFrame, y_train: pd.
         feature_names = transformer.get_feature_names_out(feature_names)
         print(f"\n{name}:")
         print(feature_names.tolist())
-
-
-def _print_confusion_matrix(y_test, y_pred, title: str) -> None:
-    """Print a confusion matrix for the model"""
-    _, ax = plt.subplots(figsize=(8, 8))
-    _ = ConfusionMatrixDisplay.from_predictions(y_true=y_test, y_pred=y_pred, ax=ax)
-    ax.set_title(title)
-    plt.show()
-
-
-def _print_calibration_display(classes: Sequence[tuple[int, str]], results, y_true, title: str) -> None:
-    """Print a calibration display for the model"""
-    _, ax = plt.subplots(figsize=(8, 8))
-
-    for i, class_name in enumerate(classes):
-        class_results = results[:, i]
-        print(class_name, class_results)
-        y_test_binary = (y_true == class_name).astype(int)
-
-        _ = CalibrationDisplay.from_predictions(y_test_binary, class_results, n_bins=10, ax=ax, name=f"Class {class_name}")
-
-    ax.set_title(title)
-    plt.show()
-
-
-def _print_precision_recall_display(classes: Sequence[tuple[int, str]], results, y_true, title: str, is_probabilistic: bool) -> None:
-    """Print a precision/recall display for the model"""
-    _, ax = plt.subplots(figsize=(8, 8))
-
-    for i, class_name in enumerate(classes):
-        class_results = results[:, i]
-
-        if is_probabilistic:
-            print(class_name, class_results)
-            y_test_binary = (y_true == class_name).astype(int)
-        else:
-            y_test_binary = label_binarize(y_true, classes=classes)[:, i]
-
-        _ = PrecisionRecallDisplay.from_predictions(y_test_binary, class_results, ax=ax, name=f"Class {class_name}")
-
-    ax.set_title(title)
-    plt.show()
-
-
-def _print_roc_curve_display(classes: Sequence[tuple[int, str]], results, y_true, title: str) -> None:
-    """Print a ROC curve display for the model"""
-    _, ax = plt.subplots(figsize=(8, 8))
-
-    for i, class_name in enumerate(classes):
-        class_results = results[:, i]
-        print(class_name, class_results)
-        y_test_binary = (y_true == class_name).astype(int)
-
-        _ = RocCurveDisplay.from_predictions(y_test_binary, class_results, ax=ax, name=f"Class {class_name}")
-
-    ax.set_title(title)
-    plt.show()
 
 
 def fit_model_and_estimate(
@@ -156,7 +96,7 @@ def fit_model_and_estimate(
     print(f"Classification Report\n{classification_report(y_test.values.ravel(), y_pred)}")
     print(f"Confusion Matrix\n{confusion_matrix(y_test.values.ravel(), y_pred)}")
 
-    _print_confusion_matrix(y_test, y_pred, f"{model_name} Confusion Matrix Display")
+    print_confusion_matrix(y_test, y_pred, f"{model_name} Confusion Matrix Display")
 
     y_test_bin = label_binarize(y_test, classes=pipeline.classes_)
 
@@ -164,15 +104,15 @@ def fit_model_and_estimate(
         pipeline_probabilities = pipeline.predict_proba(x_test)
         all_classes_macro_average_precision = average_precision_score(y_test_bin, pipeline_probabilities, average="macro")
 
-        _print_calibration_display(pipeline.classes_, pipeline_probabilities, y_test, f"{model_name} Calibration")
-        _print_roc_curve_display(pipeline.classes_, pipeline_probabilities, y_test, f"{model_name} ROC Curve")
-        _print_precision_recall_display(pipeline.classes_, pipeline_probabilities, y_test, f"{model_name} Precision Recall", True)
+        print_calibration_display(pipeline.classes_, pipeline_probabilities, y_test, f"{model_name} Calibration")
+        print_roc_curve_display(pipeline.classes_, pipeline_probabilities, y_test, f"{model_name} ROC Curve")
+        print_precision_recall_display(pipeline.classes_, pipeline_probabilities, y_test, f"{model_name} Precision Recall", True)
 
     else:
         pipeline_scores = pipeline.decision_function(x_test)
         all_classes_macro_average_precision = average_precision_score(y_test_bin, pipeline_scores, average="macro")
 
-        _print_precision_recall_display(pipeline.classes_, pipeline_scores, y_test, f"{model_name} Precision Recall", False)
+        print_precision_recall_display(pipeline.classes_, pipeline_scores, y_test, f"{model_name} Precision Recall", False)
 
     print(f"Macro Average Precision Score: {all_classes_macro_average_precision:.3f}")
 
@@ -186,11 +126,11 @@ def run_model_pipeline(
 ) -> list[Pipeline]:
     """Run the model pipeline across models"""
 
-    run_model_pipeline_memory: Memory = Memory("./cache", verbose=0)
+    run_model_pipeline_memory: Memory = Memory("./model-cache", verbose=0)
     pipelines: list[Pipeline] = []
 
     for model_name, model in _MODELS.items():
-        pipeline = build_model_pipeline(model, run_model_pipeline_memory)
+        pipeline: Pipeline = build_model_pipeline(model, run_model_pipeline_memory)
 
         fit_model_and_estimate(
             pipeline,

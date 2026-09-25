@@ -409,6 +409,7 @@ dependencies = [
     { name = "sentence-transformers" },
     { name = "shapely" },
     { name = "statsmodels" },
+    { name = "torch" },
 ]
 
 [package.dev-dependencies]
@@ -439,6 +440,7 @@ requires-dist = [
     { name = "sentence-transformers", specifier = ">=6.1.0" },
     { name = "shapely", specifier = ">=2.1.2" },
     { name = "statsmodels", specifier = ">=0.15.0" },
+    { name = "torch", specifier = ">=2.14.0" },
 ]
 
 [package.metadata.requires-dev]
