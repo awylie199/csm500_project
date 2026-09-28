@@ -20,14 +20,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import label_binarize
 from sklearn.tree import DecisionTreeClassifier
 
+from .constant import ADABOOST_DECISION_TREE_DUMP, BAGGING_CLASSIFIER_KNEIGHBOURS_DUMP, RANDOM_FOREST_FILE_DUMP
 from .model_development import PROBABILISTIC_SCORING_METRICS as SCORING_METRICS
 from .util import print_calibration_display, print_confusion_matrix, print_precision_recall_display, print_roc_curve_display
 
 _SEED: Final[int] = 20260924
 _N_ITERATIONS: Final[int] = 10
-_BAGGING_CLASSIFIER_KNEIGHBOURS_DUMP: Final[str] = "bagging_classifier_kneighbours.joblib"
-_RANDOM_FOREST_FILE_DUMP: Final[str] = "random_forest.joblib"
-_ADABOOST_DECISION_TREE_DUMP: Final[str] = "adaboost_decision_tree.joblib"
 
 ensemble_model_scoring = {k: v for k, v in SCORING_METRICS.values()}
 
@@ -53,10 +51,12 @@ def _print_results(name: str, optimised_pipeline: RandomizedSearchCV, x_test: pd
     print(f"{name} Classification Report\n{classification_report(y_test.values.ravel(), y_pred)}")
     print(f"{name} Confusion Matrix\n{confusion_matrix(y_test.values.ravel(), y_pred)}")
     print(f"{name} Macro Average Precision Score: {all_classes_macro_average_precision:.3f}")
-    print(f"{name} F1 macro: {best_model_results['mean_test_f1_macro']}")
-    print(f"{name} Accuracy: {best_model_results['mean_test_accuracy']}")
-    print(f"{name} Balanced accuracy: {best_model_results['mean_test_balanced_accuracy']}")
-    print(f"{name} ROC AUC: {best_model_results['mean_test_roc_auc']}")
+    print(f"{name} F1 macro: {best_model_results['mean_test_f1_macro']:.4f} ({best_model_results['std_test_f1_macro']:.4f})")
+    print(f"{name} Accuracy: {best_model_results['mean_test_accuracy']:.4f} ({best_model_results['std_test_accuracy']:.4f})")
+    print(
+        f"{name} Balanced accuracy: {best_model_results['mean_test_balanced_accuracy']:.4f} ({best_model_results['std_test_balanced_accuracy']:.4f})"
+    )
+    print(f"{name} ROC AUC: {best_model_results['mean_test_roc_auc']:.4f} ({best_model_results['std_test_roc_auc']:.4f})")
 
     print_confusion_matrix(y_test, y_pred, f"{name} Confusion Matrix Display")
     print_calibration_display(optimised_pipeline.classes_, pipeline_probabilities, y_test, f"{name} Calibration")
@@ -98,7 +98,7 @@ def run_kneighbours_bagging_classifier_pipeline(
     )
     optimised_bagging_classifier_k_neighbours.fit(x_train, y_train.values.ravel())
     _print_results("K-Neighbours Bagging Classifier", optimised_bagging_classifier_k_neighbours, x_test, y_test)
-    joblib.dump(optimised_bagging_classifier_k_neighbours, _BAGGING_CLASSIFIER_KNEIGHBOURS_DUMP)
+    joblib.dump(optimised_bagging_classifier_k_neighbours, BAGGING_CLASSIFIER_KNEIGHBOURS_DUMP)
 
     return pipeline
 
@@ -137,7 +137,7 @@ def run_random_forest_pipeline(
     optimised_random_forest.fit(x_train, y_train.values.ravel())
 
     _print_results("Random Forest Classifier", optimised_random_forest, x_test, y_test)
-    joblib.dump(optimised_random_forest, _RANDOM_FOREST_FILE_DUMP)
+    joblib.dump(optimised_random_forest, RANDOM_FOREST_FILE_DUMP)
 
     return pipeline
 
@@ -175,6 +175,6 @@ def run_adaboost_decision_tree_pipeline(
     optimised_adaboost_decision_tree.fit(x_train, y_train.values.ravel())
 
     _print_results("ADA Boost Decision Tree Classifier", optimised_adaboost_decision_tree, x_test, y_test)
-    joblib.dump(optimised_adaboost_decision_tree, _ADABOOST_DECISION_TREE_DUMP)
+    joblib.dump(optimised_adaboost_decision_tree, ADABOOST_DECISION_TREE_DUMP)
 
     return pipeline

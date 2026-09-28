@@ -12,6 +12,7 @@ from .model_development import run_model_pipeline
 from .model_pipeline import get_build_model_pipeline
 from .planning_application_preprocessing import preprocess_planning_data
 from .planning_geodata_aggregation_preprocessing import preprocess_aggregate_geodata
+from .shap_analysis import run_shap_analysis, run_shap_inconsistency_analysis
 from .target_distribution import plot_target_distribution
 from .text_data_analysis import text_data_analysis
 
@@ -31,4 +32,6 @@ __all__ = [
     "run_kneighbours_bagging_classifier_pipeline",
     "run_adaboost_decision_tree_pipeline",
     "run_random_forest_pipeline",
+    "run_shap_analysis",
+    "run_shap_inconsistency_analysis",
 ]

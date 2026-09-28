@@ -16,3 +16,7 @@ RAW_TEST_DATASET_Y_PATH: Final[Path] = Path(__file__).parent / "cache" / "raw_te
 
 FINAL_TRAIN_PRIMARY_DATASET_PATH: Final[Path] = Path(__file__).parent / "cache" / "final_train_primary_dataset.parquet"
 FINAL_TRAIN_PHYSICAL_DATASET_PATH: Final[Path] = Path(__file__).parent / "cache" / "final_train_physical_dataset.parquet"
+
+BAGGING_CLASSIFIER_KNEIGHBOURS_DUMP: Final[str] = "bagging_classifier_kneighbours.joblib"
+RANDOM_FOREST_FILE_DUMP: Final[str] = "random_forest.joblib"
+ADABOOST_DECISION_TREE_DUMP: Final[str] = "adaboost_decision_tree.joblib"
