@@ -5,9 +5,10 @@ import contextily as cx
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.lines import Line2D
 from pyproj.crs import CRS
 
-from .constant import NO_PLOTS, EPSG_4326_CRS
+from .constant import EPSG_4326_CRS, NO_PLOTS
 from .util import get_plot_lims, is_not_empty, is_within_area
 
 LSOA_GPKG_FILE: Final[Path] = (
@@ -39,13 +40,30 @@ def _draw_gdf_applications_plot(
 
     _, ax = plt.subplots(figsize=(12, 12))
 
+    handles: list[Line2D] = []
+
     if conservation_areas_gdf is not None and not conservation_areas_gdf.empty:
         _ = conservation_areas_gdf.plot(
             ax=ax,
             markersize=5,
-            facecolor="yellow",
+            facecolor="green",
             edgecolor="none",
             alpha=0.7,
+        )
+
+        handles.append(
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="green",
+                markerfacecolor="green",
+                markeredgecolor="green",
+                markersize=6,
+                linestyle="None",
+                alpha=0.5,
+                label="Conservation Areas",
+            )
         )
 
     if lsoa_df is not None:
@@ -58,6 +76,10 @@ def _draw_gdf_applications_plot(
             vmin=1,
             vmax=10,
             linewidth=0.5,
+            legend_kwds={
+                "label": "IMD Decile",
+                "orientation": "horizontal",
+            },
         )
 
     _ = councils_gdf.plot(
@@ -75,6 +97,23 @@ def _draw_gdf_applications_plot(
         edgecolor="red",
         alpha=0.2,
     )
+
+    handles.append(
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="red",
+            markerfacecolor="red",
+            markeredgecolor="red",
+            markersize=6,
+            linestyle="None",
+            alpha=0.5,
+            label="Applications",
+        )
+    )
+
+    ax.legend(handles=handles)
 
     cx.add_basemap(
         ax,
@@ -174,7 +213,7 @@ def _get_conservation_areas_gdf(applications_gdf_crs: CRS) -> gpd.GeoDataFrame:
     )
 
     missing_geometry = conservation_areas_df["geometry"].isna() | conservation_areas_df["geometry"].eq("")
-    print(f"N/A Conservation Ares: {missing_geometry.sum()}")
+    print(f"N/A Conservation Areas: {missing_geometry.sum()}")
 
     conservation_areas_df = conservation_areas_df[conservation_areas_df["geometry"].apply(is_not_empty)]
     conservation_areas_gdf = gpd.GeoDataFrame(
@@ -295,7 +334,7 @@ def preprocess_aggregate_geodata(df: pd.DataFrame) -> gpd.GeoDataFrame:
         None,
         councils_gdf,
         conservation_areas_gdf,
-        title="All Applications and Conservation Areas",
+        title="All Applications and Conservation Areas within Councils",
     )
 
     applications_gdf, lsoa_gdf = _merge_lsoa_imd(applications_gdf, lsoa_gdf, lsoa_imd_df)
@@ -304,7 +343,7 @@ def preprocess_aggregate_geodata(df: pd.DataFrame) -> gpd.GeoDataFrame:
         lsoa_gdf,
         councils_gdf,
         conservation_areas_gdf,
-        title="Applications within Valid LSOAs",
+        title="Applications within Councils and Valid LSOAs",
     )
 
     print(applications_gdf.groupby("CTYUA25NM").size())

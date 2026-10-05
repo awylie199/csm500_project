@@ -7,6 +7,8 @@ import contextily as cx
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.legend import Legend
+from matplotlib.lines import Line2D
 from pyproj import CRS
 
 from csm500_project.constant import EPSG_4326_CRS, NO_PLOTS
@@ -95,6 +97,7 @@ def _plot_environmental_maps(
     applications_gdf: gpd.GeoDataFrame,
     environmental_gdf: gpd.GeoDataFrame | None,
     hazard_environmental_gdf: gpd.GeoDataFrame | None,
+    environmental_label: str = "",
     title: str = "",
 ) -> None:
     """Plot Environmental Data Against Applications"""
@@ -103,15 +106,33 @@ def _plot_environmental_maps(
 
     x_lim, y_lim = get_plot_lims(applications_gdf)
     _, ax = plt.subplots(figsize=(12, 12))
+    handles: list[Line2D] = []
 
     if environmental_gdf is not None:
         _ = environmental_gdf.plot(
             ax=ax,
             markersize=5,
-            facecolor="yellow",
+            facecolor="black",
             edgecolor="none",
             alpha=0.7,
         )
+
+        handles.append(
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="black",
+                markerfacecolor="black",
+                markeredgecolor="black",
+                markersize=6,
+                linestyle="None",
+                alpha=0.5,
+                label=environmental_label,
+            )
+        )
+
+    cmap_legend: None | Legend = None
 
     if hazard_environmental_gdf is not None:
         _ = hazard_environmental_gdf.plot(
@@ -121,7 +142,10 @@ def _plot_environmental_maps(
             legend=True,
             cmap="Blues",
             linewidth=0.5,
+            legend_kwds={"title": "Risk Severity"},
         )
+
+        cmap_legend = ax.get_legend()
 
     _ = applications_gdf.plot(
         ax=ax,
@@ -130,6 +154,26 @@ def _plot_environmental_maps(
         edgecolor="red",
         alpha=0.2,
     )
+
+    handles.append(
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="red",
+            markerfacecolor="red",
+            markeredgecolor="red",
+            markersize=6,
+            linestyle="None",
+            alpha=0.5,
+            label="Applications",
+        )
+    )
+
+    ax.legend(handles=handles, loc="upper right")
+
+    if cmap_legend:
+        ax.add_artist(cmap_legend)
 
     cx.add_basemap(
         ax,
@@ -203,6 +247,7 @@ def preprocess_environmental_data(applications_gdf: gpd.GeoDataFrame) -> gpd.Geo
         applications_gdf,
         flood_risk_gdf,
         None,
+        "Flood Zone",
         "Applications Within Flood Zones",
     )
 
@@ -212,6 +257,7 @@ def preprocess_environmental_data(applications_gdf: gpd.GeoDataFrame) -> gpd.Geo
         applications_gdf,
         green_belt_gdf,
         None,
+        "Green Belt",
         "Applications Within Green Belts",
     )
 
@@ -221,6 +267,7 @@ def preprocess_environmental_data(applications_gdf: gpd.GeoDataFrame) -> gpd.Geo
         applications_gdf,
         woodlands_gdf,
         None,
+        "Ancient Woodlands",
         "Applications Within Ancient Woodlands",
     )
 
@@ -229,7 +276,7 @@ def preprocess_environmental_data(applications_gdf: gpd.GeoDataFrame) -> gpd.Geo
             applications_gdf,
             None,
             geohazard_gdf,
-            f"Applications Within {layer}",
+            title=f"Applications Within {layer}",
         )
 
     return applications_gdf

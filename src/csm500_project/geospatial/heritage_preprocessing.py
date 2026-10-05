@@ -70,7 +70,7 @@ def preprocess_heritage_data(applications_gdf: gpd.GeoDataFrame) -> gpd.GeoDataF
     applications_gdf["Grade"] = np.where(
         applications_gdf["ListDate"] <= applications_gdf["Decision Date"], applications_gdf["Grade"], np.nan
     )  # An approximation, as the application date is unavailable
-    applications_gdf["Listing Grade"] = applications_gdf["Grade"].apply(_map_listing_grade)
+    applications_gdf["Listing Grade"] = applications_gdf["Grade"].apply(_map_listing_grade).astype("Int64")
 
     applications_gdf.drop(columns=["Grade", "ListDate"], inplace=True)
 

@@ -42,7 +42,7 @@ def _plot(series: pd.Series, label: str) -> None:
     plt.show()
 
     _ = series.plot(kind="density", sharex=False, figsize=figsize)
-    _ = plt.title(f"{label} (m^2) Distribution")
+    _ = plt.title(f"{label} (m^2) Density")
     plt.show()
 
     _ = series.plot(kind="box", layout=layout, sharex=False, sharey=False, figsize=figsize)

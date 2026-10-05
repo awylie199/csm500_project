@@ -11,6 +11,7 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
 from geopandas.geoseries import GeoSeries
+from matplotlib.lines import Line2D
 from pyproj import CRS
 
 from csm500_project.constant import EPSG_4326_CRS, EPSG_27700_CRS, NO_PLOTS
@@ -157,15 +158,13 @@ def _get_article_4_direction_gdf() -> gpd.GeoDataFrame:
 
 
 def _plot_administrative_data(
-    applications_gdf: gpd.GeoDataFrame,
-    parishes_series: gpd.GeoSeries,
-    administrative_geometry_column: str,
-    title: str,
+    applications_gdf: gpd.GeoDataFrame, parishes_series: gpd.GeoSeries, administrative_geometry_column: str, title: str, label: str
 ) -> None:
     """Plot Environmental Data Against Applications"""
     if NO_PLOTS:
         return
 
+    handles: list[Line2D] = []
     x_lim, y_lim = get_plot_lims(applications_gdf)
     x_dist: float = abs(x_lim[1] - x_lim[0])
     y_dist: float = abs(y_lim[1] - y_lim[0])
@@ -186,19 +185,36 @@ def _plot_administrative_data(
     simplified_series: GeoSeries = d_simplified_series.compute()
     simplified_administrative_geometry_df: pd.DataFrame = simplified_series.to_frame(name="geometry")
 
-    print(f"PLOTTING {administrative_geometry_column} {simplified_administrative_geometry_df.columns}")
     print(simplified_administrative_geometry_df.head())
     parishes_agg: tf.Image = cvs.line(parishes_series.to_frame(name="geometry"), geometry="geometry")
-    parishes_agg = tf.shade(parishes_agg, cmap=["#000000", "#000000"], alpha=20)
+    parishes_agg = tf.shade(parishes_agg, cmap=["#000000", "#000000"], alpha=100)
     applications_agg: tf.Image = cvs.points(applications_gdf, geometry="geometry")
-    applications_agg = tf.shade(applications_agg, cmap=["#ff2c2c", "#ff2c2c"], alpha=20)
+    applications_agg = tf.shade(applications_agg, cmap=["#ff2c2c", "#ff2c2c"], alpha=200)
+
+    administrative_agg_alpha: int = 200
 
     if administrative_geometry_column == _BROWNFIELD_GDF_GEOMETRY_COLUMN:
         administrative_agg: tf.Image = cvs.points(simplified_administrative_geometry_df, geometry="geometry")
     else:
         administrative_agg = cvs.polygons(simplified_administrative_geometry_df, geometry="geometry")
+        administrative_agg_alpha = 20
 
-    administrative_agg = tf.shade(administrative_agg, cmap=["#ffee8c", "#ffee8c"], alpha=20)
+    administrative_agg = tf.shade(administrative_agg, cmap=["#2196F3", "#2196F3"], alpha=administrative_agg_alpha)
+
+    handles.append(
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="#2196F3",
+            markerfacecolor="#2196F3",
+            markeredgecolor="#2196F3",
+            markersize=6,
+            linestyle="None",
+            alpha=0.5,
+            label=label,
+        )
+    )
 
     images: tuple[tf.Image, ...] = (parishes_agg, applications_agg, administrative_agg)
 
@@ -215,6 +231,23 @@ def _plot_administrative_data(
     ax.set_axis_off()
 
     _ = ax.set_title(title)
+
+    handles.append(
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="red",
+            markerfacecolor="red",
+            markeredgecolor="red",
+            markersize=6,
+            linestyle="None",
+            alpha=0.5,
+            label="Applications",
+        )
+    )
+
+    ax.legend(handles=handles)
 
     plt.savefig(f"{title}.png", bbox_inches="tight")
     plt.show()
@@ -337,8 +370,6 @@ def _join_article_4_directions_gdf(applications_gdf: gpd.GeoDataFrame) -> gpd.Ge
 
 def _plot_areas(applications_gdf: gpd.GeoDataFrame) -> None:
     """Plot Administrative Areas Against Applications"""
-    print("PLOTTING")
-
     parish_geometry_series: GeoSeries = gpd.GeoSeries(
         applications_gdf[_PARISH_GEOMETRY_COLUMN],
         crs=EPSG_27700_CRS,
@@ -353,6 +384,7 @@ def _plot_areas(applications_gdf: gpd.GeoDataFrame) -> None:
         simplified_parish_geometry_series,
         _BROWNFIELD_GDF_GEOMETRY_COLUMN,
         "Applications with Parishes and Brownfield Sites",
+        "Brownfield Site",
     )
 
     _plot_administrative_data(
@@ -360,12 +392,14 @@ def _plot_areas(applications_gdf: gpd.GeoDataFrame) -> None:
         simplified_parish_geometry_series,
         _BUILT_UP_AREAS_GDF_GEOMETRY_COLUMN,
         "Applications with Parishes and Built Up Areas",
+        "Built-Up Area",
     )
     _plot_administrative_data(
         applications_gdf,
         simplified_parish_geometry_series,
         _ARTICLE_4_DIRECTION_GEOMETRY_COLUMN,
         "Applications with Parishes and Article 4 Directions",
+        "Article-4 Area",
     )
 
 

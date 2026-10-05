@@ -18,7 +18,6 @@ X_ORDINAL_ENCODED_CATEGORIES: Final[tuple[str, ...]] = (
     "Decision Date Quarter Of Transfer",
     "IMD Rank",
     "IMD Decile",
-    "Listing Grade",
     "Geohazards Collapsible Deposits Susceptibility",
     "Geohazards Compressible Ground Susceptibility",
     "Geohazards Landslides Susceptibility",
@@ -130,6 +129,8 @@ def _plot_mosaic_contingency(encoded_applications_df: pd.DataFrame, x_field: str
 def discrete_data_analysis(x_train: gpd.GeoDataFrame | pd.DataFrame, y_train: gpd.GeoDataFrame) -> tuple[pd.DataFrame, gpd.GeoDataFrame]:
     """Analyse the discrete data within the aggregated applications dataset"""
 
+    x_train["Listing Grade"] = x_train["Listing Grade"].astype("Int64")
+
     for category in [*_NON_ORDINAL_CATEGORIES, *X_ORDINAL_ENCODED_CATEGORIES]:
         if category not in _BINNED_CATEGORIES:
             print(f"{x_train.groupby(category).size()}\n")
@@ -147,14 +148,15 @@ def discrete_data_analysis(x_train: gpd.GeoDataFrame | pd.DataFrame, y_train: gp
     print(f"{y_train.groupby(INFERRED_TARGET_FIELD).size()}\n")
 
     for category in [c for c in X_ORDINAL_ENCODED_CATEGORIES if c not in DROPPED_CATEGORIES]:
-        x_train[category] = OrdinalEncoder().fit_transform(x_train[category])
+        x_train[[category]] = OrdinalEncoder().fit_transform(x_train[[category]])
 
     target_encoder: TargetEncoder = TargetEncoder(target_type="multiclass", cv=5, smooth="auto")
     encoded_x_categories = target_encoder.fit_transform(x_train[list(HIGH_CARDINALITY_ENCODED_CATEGORIES)], y_train)
-    encoded_x_df = pd.DataFrame(
+    encoded_x_df: pd.DataFrame = pd.DataFrame(
         encoded_x_categories, index=x_train.index, columns=target_encoder.get_feature_names_out(list(HIGH_CARDINALITY_ENCODED_CATEGORIES))
     )
     x_train = pd.concat([x_train.drop(columns=list(HIGH_CARDINALITY_ENCODED_CATEGORIES)), encoded_x_df], axis=1)
+    print(x_train.dtypes)
 
     # Drop First to avoid perfect multicollinearity in linear models
     dummy_encoded_x_train: pd.DataFrame = pd.get_dummies(x_train, columns=[*LOW_CARDINALITY_ENCODED_CATEGORIES], drop_first=True)
